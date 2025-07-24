@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Plus, Edit, Trash2, Search, Star, Check, X, Eye } from 'lucide-react'
+import ImageUpload from '../Common/ImageUpload'
 
 interface Review {
   id: string
@@ -506,13 +507,10 @@ const ReviewsManager: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                      <input
-                        type="url"
-                        value={reviewForm.image_url}
-                        onChange={(e) => setReviewForm({ ...reviewForm, image_url: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                      <ImageUpload
+                        initialImageUrl={reviewForm.image_url}
+                        onUpload={(url) => setReviewForm({ ...reviewForm, image_url: url })}
                       />
                     </div>
                   </div>

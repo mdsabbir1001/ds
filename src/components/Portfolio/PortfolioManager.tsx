@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Plus, Edit, Trash2, Search, Tag, ExternalLink, Github } from 'lucide-react'
+import ImageUpload from '../Common/ImageUpload'
 
 interface PortfolioCategory {
   id: number
@@ -41,7 +42,7 @@ const PortfolioManager: React.FC = () => {
     url: '',
     github_url: '',
     technologies: [''],
-    aspect_ratio: 'landscape'
+    aspect_ratio: ''
   })
 
   const [categoryForm, setCategoryForm] = useState({
@@ -84,22 +85,27 @@ const PortfolioManager: React.FC = () => {
     e.preventDefault()
     
     try {
-      const projectData = {
-        ...projectForm,
+      const payload = {
+        title: projectForm.title,
+        description: projectForm.description,
+        image_url: projectForm.image_url,
         category_id: parseInt(projectForm.category_id),
         project_images: projectForm.project_images.filter(img => img.trim() !== ''),
-        technologies: projectForm.technologies.filter(tech => tech.trim() !== '')
+        url: projectForm.url,
+        github_url: projectForm.github_url,
+        technologies: projectForm.technologies.filter(tech => tech.trim() !== ''),
+        aspect_ratio: projectForm.aspect_ratio
       }
 
       if (editingItem) {
         await supabase
           .from('portfolio_projects')
-          .update(projectData)
+          .update(payload)
           .eq('id', editingItem.id)
       } else {
         await supabase
           .from('portfolio_projects')
-          .insert([projectData])
+          .insert([payload])
       }
 
       await fetchData()
@@ -153,7 +159,7 @@ const PortfolioManager: React.FC = () => {
         setProjectForm({
           ...item,
           category_id: item.category_id?.toString() || '',
-          project_images: item.project_images || [''],
+          project_images: item.project_images || [],
           technologies: item.technologies || ['']
         })
       } else if (type === 'category') {
@@ -408,26 +414,22 @@ const PortfolioManager: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Aspect Ratio</label>
-                      <select
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Aspect Ratio (e.g., 16/9, 4/3, 1/1)</label>
+                      <input
+                        type="text"
                         value={projectForm.aspect_ratio}
                         onChange={(e) => setProjectForm({ ...projectForm, aspect_ratio: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="landscape">Landscape</option>
-                        <option value="portrait">Portrait</option>
-                        <option value="square">Square</option>
-                      </select>
+                        placeholder="e.g., 16/9, 4/3, 1/1"
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Main Image URL</label>
-                    <input
-                      type="url"
-                      value={projectForm.image_url}
-                      onChange={(e) => setProjectForm({ ...projectForm, image_url: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Main Image</label>
+                    <ImageUpload
+                      initialImageUrl={projectForm.image_url}
+                      onUpload={(url) => setProjectForm({ ...projectForm, image_url: url })}
                     />
                   </div>
 
@@ -455,33 +457,25 @@ const PortfolioManager: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Project Images</label>
-                    {projectForm.project_images.map((image, index) => (
-                      <div key={index} className="flex items-center gap-2 mb-2">
-                        <input
-                          type="url"
-                          value={image}
-                          onChange={(e) => updateArrayField('project_images', index, e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Image URL"
-                        />
-                        {projectForm.project_images.length > 1 && (
+                    <ImageUpload
+                      multiple={true}
+                      onUpload={(url) => setProjectForm(prev => ({ ...prev, project_images: [...prev.project_images, url] }))}
+                    />
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {projectForm.project_images.filter(img => img.trim() !== '').map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img src={image} alt={`Project Image ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
                           <button
                             type="button"
                             onClick={() => removeArrayField('project_images', index)}
-                            className="text-red-600 hover:text-red-800"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove image"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addArrayField('project_images')}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      + Add Image
-                    </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
